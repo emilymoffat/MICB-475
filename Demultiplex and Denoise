@@ -1,0 +1,50 @@
+#Code we used to import with manifest and demultiplex all at once. demux_seqs.qva was saved to a folder in /data/demultiplexed_seqs
+qiime tools import \
+  --type "SampleData[SequencesWithQuality]" \
+  --input-format SingleEndFastqManifestPhred33V2 \
+  --input-path /mnt/datasets/project_2/infant/infant_manifest.txt \
+  --output-path ./demultiplexed_seqs/demux_seqs.qza
+
+
+#Code used to convert demux_seqs.qza to demux_seqs.qza file 
+WD: Working in :/data/project_2/demultiplexed_seqs
+qiime demux summarize \
+  --i-data demux_seqs.qza \
+  --o-visualization demux_seqs.qzv
+
+# code used to transfer demux_seqs.qvz to maddy’s local device into a folder called project_2.
+scp root@10.19.139.142:/data/demultiplexed_seqs/demux_seqs.qzv .
+
+# made a new directory in /data called project_2
+mkdir project_2
+
+# Copied directory demultiplexed_seqs into project_2 directory 
+cp -r demultiplexed_seqs/ project_2
+
+# deleted old demultiplexed_seqs directory
+rm -r demultiplexed_seqs/
+
+# in a screen called Denoising2.0, we ran the below code to denoise the demux_seqs.qza file using a truncation length of 0-150		 	 	 		
+qiime dada2 denoise-single \
+  --i-demultiplexed-seqs ./demultiplexed_seqs/demux_seqs.qza \
+  --p-trim-left 0 \
+  --p-trunc-len 150 \
+  --o-representative-sequences ./denoised_seqs/rep-seqs.qza \
+  --o-table ./denoised_seqs/table.qza \
+  --o-denoising-stats ./denoised_seqs/stats.qza
+
+# transformed stats.qza into stats.qzv to make the file human readable
+qiime metadata tabulate \
+  --m-input-file stats.qza \
+  --o-visualization stats.qzv
+# transformed rep-seqs.qza into rep-seqs.qzv to make the file human readable
+
+qiime feature-table tabulate-seqs \
+  --i-data rep-seqs.qza \
+  --o-visualization rep-seqs.qzv
+# transformed table.qza into table.qzv to make the file human readable
+qiime feature-table summarize \
+  --i-table table.qza \
+  --o-visualization table.qzv \
+  --m-sample-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt
+
