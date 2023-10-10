@@ -1,0 +1,35 @@
+# Emily, 2023-10-10
+
+# Taxonomic Assignment
+
+# Create new screen 
+-S screen Assigning_taxonomy 
+
+# In Assinging_taxonomy screen, use the trained classifier to assign taxonomy to reads (rep-seqs.qza)
+qiime feature-classifier classify-sklearn \
+  --i-classifier classifier/classifier.qza \
+  --i-reads denoised_seqs/rep-seqs.qza \
+  --o-classification taxonomy.qza 
+
+ # Visualize the taxonomy.qza file 
+ qiime metadata tabulate \
+  --m-input-file taxonomy.qza \
+  --o-visualization taxonomy.qzv
+
+ # Create taxonomy bar plots 
+  qiime taxa barplot \
+  --i-table denoised_seqs/table.qza \
+  --i-taxonomy taxonomy.qza \
+  --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+  --o-visualization taxa-bar-plots.qzv
+
+  #Transfer taxonomy.qzv and taxa-bar-plots.qzv to Emily's local computer 
+  scp root@10.19.139.142:/data/project_2/taxa-bar-plots.qzv .
+  scp root@10.19.139.142:/data/project_2/taxonomy.qzv . 
+
+  # Data filtering: filtering out mitochondrial & chloroplast DNA 
+  qiime taxa filter-table \
+  --i-table denoised_seqs/table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table table-no-mitochondria-no-chloroplast.qza 
