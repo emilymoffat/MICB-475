@@ -1,0 +1,50 @@
+#Creating phylogenetic tree
+
+qiime phylogeny align-to-tree-mafft-fasttree \
+--i-sequences denoised_seqs/rep-seqs.qza \
+--o-alignment aligned-rep-seqs.qza \
+--o-masked-alignment masked-aligned-rep-seqs.qza \
+--o-tree unrooted-tree.qza \
+--o-rooted-tree rooted-tree.qza
+
+#Rarefaction
+
+qiime diversity alpha-rarefaction \
+    --i-table table-no-mitochondria-no-chloroplast.qza \
+    --i-phylogeny rooted-tree.qza \
+    --p-max-depth 60000 \
+    --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+    --o-visualization alpha-rarefaction.qzv
+
+qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny rooted-tree.qza \
+  --i-table table-no-mitochondria-no-chloroplast.qza \
+  --p-sampling-depth 14097 \
+  --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+  --output-dir core-metrics-results
+
+#Alpha Diversity
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity faith_pd_vector.qza \
+  --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+  --o-visualization faith-pd-group-significance.qzv
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity evenness_vector.qza \
+  --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+  --o-visualization evenness-group-significance.qzv
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity shannon_vector.qza \
+  --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+  --o-visualization shannon-group-significance.qzv
+
+#Beta Diversity
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+  --m-metadata-column feed \
+  --o-visualization unweighted-unifrac-feed-significance.qzv \
+  --p-pairwise
