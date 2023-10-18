@@ -1,0 +1,13 @@
+# extracting the amplicon of interest from the reference database
+qiime feature-classifier extract-reads \
+  --i-sequences /mnt/datasets/silva_ref_files/silva-138-99-seqs.qza \
+  --p-f-primer GTGCCAGCMGCCGCGGTAA \
+  --p-r-primer GGACTACHVGGGTWTCTAAT \
+  --p-trunc-len 150 \
+  --o-reads ref-seqs-trimmed.qza
+
+# train the classifier with new ref seq file
+qiime feature-classifier fit-classifier-naive-bayes \ 
+  --i-reference-reads ref-seqs-trimmed.qza \
+  --i-reference-taxonomy /mnt/datasets/silva_ref_files/silva-138-99-tax.qza \
+  --o-classifier classifier.qza
