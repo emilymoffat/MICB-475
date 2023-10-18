@@ -1,0 +1,27 @@
+#Filtering by age
+qiime feature-table filter-samples \
+--i-table table-no-mitochondria-no-chloroplast.qza \
+--m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+--p-where "[age_category]='4 months'" \
+--o-filtered-table table-4month-only.qza
+
+#Filtering out adults
+qiime feature-table filter-samples \
+--i-table table-4month-only.qza \
+--m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+--p-where "[life_stage]='Infant'" \
+--o-filtered-table table-4month-infant-only.qza
+
+#Visualizing Table
+qiime feature-table summarize \
+--i-table table-4month-infant-only.qza \
+--o-visualization table-4month-infant-only.qzv \
+--m-sample-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt
+
+#Rarefaction Curve using filtered table
+qiime diversity alpha-rarefaction \
+    --i-table table-4month-infant-only.qza \
+    --i-phylogeny rooted-tree.qza \
+    --p-max-depth 50000 \
+    --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
+    --o-visualization alpha-rarefaction-4month-infant-only.qzv
