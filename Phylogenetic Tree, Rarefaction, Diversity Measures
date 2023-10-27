@@ -1,20 +1,18 @@
-#Creating phylogenetic tree
-
+#In /data/project_2, create rooted and unrooted phylogenetic trees
 qiime phylogeny align-to-tree-mafft-fasttree \
 --i-sequences denoised_seqs/rep-seqs.qza \
---o-alignment aligned-rep-seqs.qza \
---o-masked-alignment masked-aligned-rep-seqs.qza \
---o-tree unrooted-tree.qza \
---o-rooted-tree rooted-tree.qza
+--o-alignment phylogenetic_trees/aligned-rep-seqs.qza \
+--o-masked-alignment phylogenetic_trees/masked-aligned-rep-seqs.qza \
+--o-tree phylogenetic_trees/unrooted-tree.qza \
+--o-rooted-tree phylogenetic_trees/rooted-tree.qza
 
-#Rarefaction
-
+#In /data/project_2, generate a rarefaction curve
 qiime diversity alpha-rarefaction \
-    --i-table table-no-mitochondria-no-chloroplast.qza \
-    --i-phylogeny rooted-tree.qza \
-    --p-max-depth 60000 \
-    --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
-    --o-visualization alpha-rarefaction.qzv
+    --i-table taxonomy_and_filtering/table-no-mitochondria-no-chloroplast.qza \
+    --i-phylogeny phylogenetic_trees/rooted-tree.qza \
+    --p-max-depth 49000 \
+    --m-metadata-file /data/filtered_metadata/filtered_infant_metadata.txt \
+    --o-visualization rarefaction/alpha-rarefaction.qzv
 
 qiime diversity core-metrics-phylogenetic \
   --i-phylogeny rooted-tree.qza \
