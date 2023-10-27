@@ -2,34 +2,27 @@
 
 # Taxonomic Assignment
 
-# Create new screen 
--S screen Assigning_taxonomy 
-
-# In Assinging_taxonomy screen, use the trained classifier to assign taxonomy to reads (rep-seqs.qza)
+# In /data/project_2, use the trained classifier to assign taxonomy to reads (rep-seqs.qza)
 qiime feature-classifier classify-sklearn \
   --i-classifier classifier/classifier.qza \
   --i-reads denoised_seqs/rep-seqs.qza \
-  --o-classification taxonomy.qza 
+  --o-classification taxonomy_and_filtering/taxonomy.qza
 
- # Visualize the taxonomy.qza file 
+ # In /data/project_2/taxonomy_and_filtering, visualize the taxonomy.qza file 
  qiime metadata tabulate \
   --m-input-file taxonomy.qza \
   --o-visualization taxonomy.qzv
 
- # Create taxonomy bar plots 
+ # In /data/project_2, create taxonomy bar plots 
   qiime taxa barplot \
   --i-table denoised_seqs/table.qza \
-  --i-taxonomy taxonomy.qza \
-  --m-metadata-file /mnt/datasets/project_2/infant/infant_metadata.txt \
-  --o-visualization taxa-bar-plots.qzv
+  --i-taxonomy taxonomy_and_filtering/taxonomy.qza \
+  --m-metadata-file /data/filtered_metadata/filtered_infant_metadata.txt \
+  --o-visualization taxonomy_and_filtering/taxa-bar-plots.qzv
 
-  #Transfer taxonomy.qzv and taxa-bar-plots.qzv to Emily's local computer 
-  scp root@10.19.139.142:/data/project_2/taxa-bar-plots.qzv .
-  scp root@10.19.139.142:/data/project_2/taxonomy.qzv . 
-
-  # Data filtering: filtering out mitochondrial & chloroplast DNA 
+  # In /data/project_2, filter out mitochondrial & chloroplast DNA from table.qza
   qiime taxa filter-table \
   --i-table denoised_seqs/table.qza \
-  --i-taxonomy taxonomy.qza \
+  --i-taxonomy taxonomy_and_filtering/taxonomy.qza \
   --p-exclude mitochondria,chloroplast \
-  --o-filtered-table table-no-mitochondria-no-chloroplast.qza 
+  --o-filtered-table taxonomy_and_filtering/table-no-mitochondria-no-chloroplast.qza
