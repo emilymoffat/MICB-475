@@ -1,0 +1,88 @@
+#!/usr/bin/env Rscript
+# MICB 475 project 2 creating phyloseq objects
+# Emily 2023-10-28
+
+library(phyloseq)
+library(ape)
+library(tidyverse)
+library(vegan)  
+library(picante)
+
+#### Load in RData ####
+
+load("all_BMI_phyloseq_rare.RData")
+load("all_BMI_phyloseq.RData")
+load("high_BMI_phyloseq.RData")
+load("high_BMI_phyloseq_rare.RData")
+load("low_BMI_phyloseq.RData")
+load("low_BMI_phyloseq_rare.RData")
+
+#### Bray-Curtis Evaluation #### 
+# Evaluate Bray-Curtis for mom BMI 
+bc_distance_BMI <- distance(all_BMI_phyloseq_rare, method="bray")
+
+pcoa_bc_BMI <- ordinate(all_BMI_phyloseq_rare, method="PCoA", distance=bc_distance_BMI)
+
+pcoa_bray_BMI <- plot_ordination(all_BMI_phyloseq_rare, pcoa_bc_BMI, color = "mom_bmi") +
+  labs(col = "mom_bmi")
+
+# view plot 
+print(pcoa_bray_BMI)
+# will need to come back to edit this plot, perhaps grouping different BMIs together into 
+# discrete variables to better visualize. 
+
+# save plot 
+ggsave("pcoa_bray_BMI.png", 
+       plot = pcoa_bray_BMI, 
+       height = 4, width = 5)
+
+# Evaluate Bray-Curtis for feeding mode 
+bc_distance_feed_mode <- distance(all_BMI_phyloseq_rare, method="bray")
+
+pcoa_bc_feed_mode <- ordinate(all_BMI_phyloseq_rare, method="PCoA", distance=bc_distance_feed_mode)
+
+pcoa_bc_feed_mode <- plot_ordination(all_BMI_phyloseq_rare, pcoa_bc_feed_mode, color = "feed") +
+  labs(col = "feed")
+
+# view plot 
+print(pcoa_bc_feed_mode)
+
+# save plot 
+ggsave("pcoa_bc_feed_mode.png"
+       , pcoa_bc_feed_mode
+       , height=4, width=5)
+
+#### Weighted UniFrac Evaluation #### 
+# Evaluate Weighted UniFrac for mom BMI 
+wu_distance_BMI <- distance(all_BMI_phyloseq_rare, method="unifrac", weighted=TRUE)
+
+pcoa_wu_BMI <- ordinate(all_BMI_phyloseq_rare, method="PCoA", distance=wu_distance_BMI)
+
+plot_ordination(all_BMI_phyloseq_rare, pcoa_wu_BMI, color = "mom_bmi")
+
+pcoa_wu_BMI <- plot_ordination(all_BMI_phyloseq_rare, pcoa_wu_BMI, color = "mom_bmi") +
+  labs(col = "mom_bmi")
+
+# view plot
+print(pcoa_wu_BMI)
+
+# save plot 
+ggsave("pcoa_wu_BMI.png"
+       , pcoa_wu_BMI
+       , height=4, width=5)
+
+# Evaluate Weighted UniFrac for feeding mode 
+wu_distance_feed_mode <- distance(all_BMI_phyloseq_rare, method="unifrac", weighted=TRUE)
+
+pcoa_wu_feed_mode <- ordinate(all_BMI_phyloseq_rare, method="PCoA", distance=wu_distance_feed_mode)
+
+pcoa_wu_feed_mode <- plot_ordination(all_BMI_phyloseq_rare, pcoa_wu_feed_mode, color = "feed") +
+  labs(col = "feed")
+
+# view plot
+print(pcoa_wu_feed_mode)
+
+# save plot 
+ggsave("pcoa_wu_feed_mode.png"
+       , pcoa_wu_feed_mode
+       , height=4, width=5)
