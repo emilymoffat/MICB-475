@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # MICB 475 project 2 creating phyloseq objects
-# Emily 2023-10-28
+# Emily and Hayley 2023-10-28
 
 library(phyloseq)
 library(ape)
