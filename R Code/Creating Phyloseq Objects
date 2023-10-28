@@ -1,0 +1,103 @@
+#!/usr/bin/env Rscript
+# MICB 475 project 2 creating phyloseq objects
+# Emily 2023-10-28
+
+library(phyloseq)
+library(ape)
+library(tidyverse)
+library(vegan) 
+install.packages("readxl")
+library(readxl)
+
+#### Load data #### 
+Metafp <- read_excel("QIIME_Files/BMI Metadata.xlsx")
+
+otufp <- "QIIME_Files/feature-table.txt"
+otu <- read_delim(file = otufp, delim="\t", skip=1)
+
+taxfp <- "QIIME_Files/taxonomy.tsv"
+tax <- read_delim(taxfp, delim="\t")
+
+phylotreefp <- "QIIME_Files/tree.nwk" 
+phylotree <- read.tree(phylotreefp) 
+
+#### Format OTU table ####
+# OTU tables should be a matrix
+# with rownames and colnames as OTUs and sampleIDs, respectively
+# Note: tibbles do not allow rownames so if you imported with read_delim, change back
+
+# save everything except first column (OTU ID) into a matrix
+otu_mat <- as.matrix(otu[,-1])
+# Make first column (#OTU ID) the rownames of the new matrix
+rownames(otu_mat) <- otu$`#OTU ID`
+# Use the "otu_table" function to make an OTU table
+OTU <- otu_table(otu_mat, taxa_are_rows = TRUE) 
+class(OTU)
+
+#### Format sample metadata ####
+# Save everything except sampleid as new data frame
+samp_df <- as.data.frame(Metafp[,-1])
+# Make sampleids the rownames
+rownames(samp_df)<- Metafp$'Sample'
+# Make phyloseq sample data with sample_data() function
+SAMP <- sample_data(samp_df)
+class(SAMP)
+
+#### Formatting taxonomy ####
+# Convert taxon strings to a table with separate taxa rank columns
+tax_mat <- tax %>% select(-Confidence)%>%
+  separate(col=Taxon, sep="; "
+           , into = c("Domain","Phylum","Class","Order","Family","Genus","Species")) %>%
+  as.matrix() # Saving as a matrix
+# Save everything except feature IDs 
+tax_mat <- tax_mat[,-1] 
+# Make sampleids the rownames
+rownames(tax_mat) <- tax$`Feature ID`
+# Make taxa table
+TAX <- tax_table(tax_mat)
+class(TAX)
+
+#### Create phyloseq object ####
+# Merge all into a phyloseq object
+infant_phylloseq <- phyloseq(OTU, SAMP, TAX, phylotree)
+class(infant_phylloseq)
+
+# Remove non-bacterial sequences, if any
+infant_filt <- subset_taxa(infant_phylloseq,  Domain == "d__Bacteria" & Class!="c__Chloroplast" & Family !="f__Mitochondria")
+# Remove ASVs that have less than 5 counts total
+infant_filt_nolow <- filter_taxa(infant_filt, function(x) sum(x)>5, prune = TRUE)
+# Remove samples with less than 100 reads
+all_BMI_phyloseq <- prune_samples(sample_sums(infant_filt_nolow)>100, infant_filt_nolow)
+
+# Rarefy samples
+# rngseed sets a random number. If you want to reproduce this exact analysis, you need
+# to set rngseed the same number each time
+# t transposes the table to use rarecurve function
+# cex decreases font size 
+rarecurve(t(as.data.frame(otu_table(all_BMI_phyloseq))), cex=0.1)
+all_BMI_phyloseq_rare <- rarefy_even_depth(all_BMI_phyloseq, rngseed = 1, sample.size = 14456) 
+
+#### Split high BMI vs Low BMI phyloseq objects ####
+#non-rarefied phyloseq objects 
+high_BMI_phyloseq <- subset_samples(all_BMI_phyloseq, mom_bmi>30)
+class(high_BMI_phyloseq)
+
+low_BMI_phyloseq <- subset_samples(all_BMI_phyloseq, mom_bmi<=30)
+class(low_BMI_phyloseq)
+
+#rarefied phyloseq objects 
+high_BMI_phyloseq_rare <- subset_samples(infant_rare, mom_bmi>30)
+class(high_BMI_phyloseq_rare)
+
+low_BMI_phyloseq_rare <- subset_samples(infant_rare, mom_bmi<=30)
+class(low_BMI_phyloseq_rare)
+
+##### Saving all phyloseq objects #####
+save(all_BMI_phyloseq, file="all_BMI_phyloseq.RData")
+save(all_BMI_phyloseq_rare, file="all_BMI_phyloseq_rare.RData")
+
+save(high_BMI_phyloseq, file="high_BMI_phyloseq.RData")
+save(low_BMI_phyloseq, file="low_BMI_phyloseq.RData")
+
+save(high_BMI_phyloseq_rare, file="high_BMI_phyloseq_rare.RData")
+save(low_BMI_phyloseq_rare, file="low_BMI_phyloseq_rare.RData")
