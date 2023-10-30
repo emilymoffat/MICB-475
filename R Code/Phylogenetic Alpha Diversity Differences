@@ -1,0 +1,93 @@
+ALPHA DIVERSITY PHYLOGENETIC DIFFERENCES
+# Load the phyloseq package
+# Load both phyloseq and ape packages
+library(phyloseq)
+library(ape)
+library(vegan)
+library(tidyverse)
+library(picante)
+# Create the phylogenetic tree object without including the root
+phylo_dist <- pd(t(otu_table(all_BMI_phyloseq_rare)), phy_tree(all_BMI_phyloseq_rare),
+                 include.root=F) 
+
+# Assign PD values to sample data in the phyloseq object
+sample_data(all_BMI_phyloseq_rare)$PD <- phylo_dist$PD
+
+# Create a box plot of phylogenetic diversity against mom BMIs
+plot.pd.bmi.all <- ggplot(sample_data(all_BMI_phyloseq_rare), aes(x = mom_bmi, y = PD)) +
+  geom_boxplot() +
+  xlab("MOM_BMI") +
+  ylab("Phylogenetic Diversity")
+
+# View the plot
+print(plot.pd.bmi.all)
+
+#Spearman's Test Result for MOM BMI ALL vs. Phylogenetic Differences 
+samp_dat_bmi$mom_bmi <- as.numeric(samp_dat_bmi$mom_bmi)
+spearman_bmi_result <- cor.test(samp_dat_bmi$mom_bmi, samp_dat_bmi$Observed, method="spearman") 
+
+#Create a box plot of phylogenetic diversity against mom BMIs
+plot.pd.feed.all <- ggplot(sample_data(all_BMI_phyloseq_rare), aes(x = feed, y = PD)) +
+  geom_boxplot() +
+  xlab("Feed Type") +
+  ylab("Phylogenetic Diversity")
+
+#Wilcox Test Result Feed All 
+wilcox_test_result_feed_all <- wilcox.test(Observed ~ feed, data=samp_dat_bmi)
+print(wilcox_test_result_feed_all)
+
+
+##Low BMI Group: 
+load("low_BMI_phyloseq_rare.Rdata")
+
+phylo_dist_low <- pd(t(otu_table(low_BMI_phyloseq_rare)), phy_tree(low_BMI_phyloseq_rare),
+                 include.root=F) 
+
+# Assign PD values to sample data in the phyloseq object
+sample_data(low_BMI_phyloseq_rare)$PD <- phylo_dist_low$PD
+
+# Create a box plot of phylogenetic diversity against mom BMIs
+plot.pd.feed.low <- ggplot(sample_data(low_BMI_phyloseq_rare), aes(x = feed, y = PD)) +
+  geom_boxplot() +
+  xlab("Feed Type") +
+  ylab("Phylogenetic Diversity")
+
+# View the plot
+print(plot.pd.feed.low)
+
+#Set parameters for low BMI
+alphadiv_low <- estimate_richness(low_BMI_phyloseq_rare)
+samp_dat_low <- sample_data(low_BMI_phyloseq_rare)
+samp_dat_bmi_low <- data.frame(samp_dat_low, alphadiv_low)
+
+#Wilcox Test Result Feed Low
+wilcox_test_result_feed_low <- wilcox.test(Observed ~ feed, data=samp_dat_bmi_low)
+print(wilcox_test_result_feed_low)
+
+
+##High BMI Group: 
+load("high_BMI_phyloseq_rare.Rdata")
+
+phylo_dist_high <- pd(t(otu_table(high_BMI_phyloseq_rare)), phy_tree(high_BMI_phyloseq_rare),
+                     include.root=F) 
+
+# Assign PD values to sample data in the phyloseq object
+sample_data(high_BMI_phyloseq_rare)$PD <- phylo_dist_high$PD
+
+# Create a box plot of phylogenetic diversity against mom BMIs
+plot.pd.bmi.high <- ggplot(sample_data(high_BMI_phyloseq_rare), aes(x = feed, y = PD)) +
+  geom_boxplot() +
+  xlab("Feed Type") +
+  ylab("Phylogenetic Diversity")
+
+# View the plot
+print(plot.pd.bmi.high)
+
+#Set parameters for low BMI
+alphadiv_high <- estimate_richness(high_BMI_phyloseq_rare)
+samp_dat_high <- sample_data(high_BMI_phyloseq_rare)
+samp_dat_bmi_high <- data.frame(samp_dat_high, alphadiv_high)
+
+#Wilcox Test Result Feed Low
+wilcox_test_result_feed_high <- wilcox.test(Observed ~ feed, data=samp_dat_bmi_high)
+print(wilcox_test_result_feed_high)
