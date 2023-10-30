@@ -37,17 +37,25 @@ all_bmi_boxplot_feed <- plot_richness(all_BMI_phyloseq_rare, x = "feed", measure
   geom_boxplot()
 all_bmi_boxplot_feed
 
-# NOT FINISHED - create one plot with two boxplots (high vs low bmi category) vs shannon diversity in the all bmi category
-# need to create a new column that divides mom_bmi into high vs low
-all_bmi_boxplot_bmi <- plot_richness(all_BMI_phyloseq_rare, x = "mom_bmi", measures = c("Shannon")) +
-  xlab("Mom BMI") +
-  geom_boxplot()
-all_bmi_boxplot_bmi
-
 # run significance test
 alphadiv <- estimate_richness(all_BMI_phyloseq_rare)
 samp_dat <- sample_data(all_BMI_phyloseq_rare)
 samp_dat_bmi <- data.frame(samp_dat, alphadiv)
 
 wilcox_test_result <- wilcox.test(Shannon ~ feed, data = samp_dat_bmi)
+wilcox_test_result
+
+# create one plot with two boxplots (high vs low bmi category) vs shannon diversity in the all bmi category
+# used a separate phyloseq object that had a new column with low vs high mom bmi classification
+all_bmi_boxplot_bmi <- plot_richness(all_BMI_phyloseq_rare_new, x = "mom_bmi_label", measures = c("Shannon")) +
+  xlab("Mom BMI") +
+  geom_boxplot()
+all_bmi_boxplot_bmi
+
+# run significance test
+alphadiv_new <- estimate_richness(all_BMI_phyloseq_rare_new)
+samp_dat_new <- sample_data(all_BMI_phyloseq_rare_new)
+samp_dat_bmi_new <- data.frame(samp_dat_new, alphadiv_new)
+
+wilcox_test_result <- wilcox.test(Shannon ~ mom_bmi_label, data = samp_dat_bmi_new)
 wilcox_test_result
