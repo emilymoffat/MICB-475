@@ -1,3 +1,8 @@
+library(phyloseq)
+library(tidyverse)
+library(ggplot2)
+library(vegan) 
+
 # create one plot with two boxplots (one for each feed type) vs shannon diversity in the low mom_bmi category
 low_bmi_boxplot <- plot_richness(low_BMI_phyloseq_rare, x = "feed", measures = c("Shannon")) +
   xlab("Feeding Mode") +
