@@ -1,0 +1,84 @@
+#!/usr/bin/env Rscript
+# MICB 475 project 2 creating phyloseq objects with an additional low vs high column 
+# Emily 2023-10-30
+
+library(phyloseq)
+library(ape)
+library(tidyverse)
+library(vegan) 
+install.packages("readxl")
+library(readxl)
+
+#### Read in Data #### 
+Metafp <- read_excel("QIIME_Files/BMI Metadata.xlsx")
+
+otufp <- "QIIME_Files/feature-table.txt"
+otu <- read_delim(file = otufp, delim="\t", skip=1)
+
+taxfp <- "QIIME_Files/taxonomy.tsv"
+tax <- read_delim(taxfp, delim="\t")
+
+phylotreefp <- "QIIME_Files/tree.nwk" 
+phylotree <- read.tree(phylotreefp) 
+
+#### Format OTU table ####
+# OTU tables should be a matrix
+# with rownames and colnames as OTUs and sampleIDs, respectively
+# Note: tibbles do not allow rownames so if you imported with read_delim, change back
+
+# save everything except first column (OTU ID) into a matrix
+otu_mat <- as.matrix(otu[,-1])
+# Make first column (#OTU ID) the rownames of the new matrix
+rownames(otu_mat) <- otu$`#OTU ID`
+# Use the "otu_table" function to make an OTU table
+OTU <- otu_table(otu_mat, taxa_are_rows = TRUE) 
+class(OTU)
+
+#### Format sample metadata ####
+# Save everything except sampleid as new data frame
+samp_df <- as.data.frame(Metafp[,-1])
+# Make sampleids the rownames
+rownames(samp_df)<- Metafp$'Sample'
+# Create new column: mom_bmi_label, based on mom_bmi column
+samp_df$mom_bmi_label <- ifelse(samp_df$mom_bmi > 30, "high", "low")
+# Make phyloseq sample data with sample_data() function
+SAMP <- sample_data(samp_df)
+class(SAMP)
+
+#### Formatting taxonomy ####
+# Convert taxon strings to a table with separate taxa rank columns
+tax_mat <- tax %>% select(-Confidence)%>%
+  separate(col=Taxon, sep="; "
+           , into = c("Domain","Phylum","Class","Order","Family","Genus","Species")) %>%
+  as.matrix() # Saving as a matrix
+# Save everything except feature IDs 
+tax_mat <- tax_mat[,-1] 
+# Make sampleids the rownames
+rownames(tax_mat) <- tax$`Feature ID`
+# Make taxa table
+TAX <- tax_table(tax_mat)
+class(TAX)
+
+#### Create phyloseq object ####
+# Merge all into a phyloseq object
+infant_phylloseq_new <- phyloseq(OTU, SAMP, TAX, phylotree)
+class(infant_phylloseq_new)
+
+# Remove non-bacterial sequences, if any
+infant_filt_new <- subset_taxa(infant_phylloseq_new,  Domain == "d__Bacteria" & Class!="c__Chloroplast" & Family !="f__Mitochondria")
+# Remove ASVs that have less than 5 counts total
+infant_filt_nolow_new <- filter_taxa(infant_filt_new, function(x) sum(x)>5, prune = TRUE)
+# Remove samples with less than 100 reads
+all_BMI_phyloseq_new <- prune_samples(sample_sums(infant_filt_nolow_new)>100, infant_filt_nolow)
+
+# Rarefy samples
+# rngseed sets a random number. If you want to reproduce this exact analysis, you need
+# to set rngseed the same number each time
+# t transposes the table to use rarecurve function
+# cex decreases font size 
+rarecurve(t(as.data.frame(otu_table(all_BMI_phyloseq_new))), cex=0.1)
+all_BMI_phyloseq_rare_new <- rarefy_even_depth(all_BMI_phyloseq_new, rngseed = 1, sample.size = 14456) 
+
+# Save new phyloseq object with mom_bmi_label 
+save(all_BMI_phyloseq_new, file="all_BMI_phyloseq_new.RData")
+save(all_BMI_phyloseq_rare_new, file="all_BMI_phyloseq_rare_new.RData")
