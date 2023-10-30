@@ -1,0 +1,48 @@
+#!/usr/bin/env Rscript
+# MICB 475 project 2 beta diversity analysis with mom BMI as categorical variable
+# Emily 2023-10-30
+
+library(phyloseq)
+library(ape)
+library(tidyverse)
+library(vegan)  
+library(picante)
+
+#### Load in RData ####
+load("../all_BMI_phyloseq_rare_new.RData")
+
+#### Bray-Curtis Evaluation #### 
+# Evaluate Bray-Curtis for mom BMI 
+bc_distance_BMI <- distance(all_BMI_phyloseq_rare_new, method="bray")
+
+pcoa_bc_BMI <- ordinate(all_BMI_phyloseq_rare_new, method="PCoA", distance=bc_distance_BMI)
+
+pcoa_bray_BMI_categorical <- plot_ordination(all_BMI_phyloseq_rare_new, pcoa_bc_BMI, color = "mom_bmi_label") +
+  labs(col = "mom BMI")
+
+# view plot 
+print(pcoa_bray_BMI_categorical)
+ 
+# save plot 
+ggsave("pcoa_bray_BMI_categorical.png", 
+       plot = pcoa_bray_BMI_categorical, 
+       height = 4, width = 5)
+
+#### Weighted UniFrac #### 
+# Evaluate Weighted UniFrac for mom BMI 
+wu_distance_BMI <- distance(all_BMI_phyloseq_rare_new, method="unifrac", weighted=TRUE)
+
+pcoa_wu_BMI <- ordinate(all_BMI_phyloseq_rare_new, method="PCoA", distance=wu_distance_BMI)
+
+plot_ordination(all_BMI_phyloseq_rare_new, pcoa_wu_BMI, color = "mom_bmi_label")
+
+pcoa_wu_BMI_categorical <- plot_ordination(all_BMI_phyloseq_rare_new, pcoa_wu_BMI, color = "mom_bmi_label") +
+  labs(col = "mom BMI")
+
+# view plot
+print(pcoa_wu_BMI_categorical)
+
+# save plot 
+ggsave("pcoa_wu_BMI_categorical.png"
+       , pcoa_wu_BMI_categorical
+       , height=4, width=5)
