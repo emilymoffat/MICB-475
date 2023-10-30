@@ -14,8 +14,8 @@ low_alphadiv <- estimate_richness(low_BMI_phyloseq_rare)
 low_samp_dat <- sample_data(low_BMI_phyloseq_rare)
 low_samp_dat_bmi <- data.frame(low_samp_dat, low_alphadiv)
 
-low_kruskal_test_result <- kruskal.test(Shannon ~ feed, data = low_samp_dat_bmi)
-low_kruskal_test_result
+low_wilcox_test_result <- wilcox.test(Shannon ~ feed, data = low_samp_dat_bmi)
+low_wilcox_test_result
 
 # create one plot with two boxplots (one for each feed type) vs shannon diversity in the high mom_bmi category
 high_bmi_boxplot <- plot_richness(high_BMI_phyloseq_rare, x = "feed", measures = c("Shannon")) +
@@ -28,8 +28,8 @@ high_alphadiv <- estimate_richness(high_BMI_phyloseq_rare)
 high_samp_dat <- sample_data(high_BMI_phyloseq_rare)
 high_samp_dat_bmi <- data.frame(high_samp_dat, high_alphadiv)
 
-high_kruskal_test_result <- kruskal.test(Shannon ~ feed, data = high_samp_dat_bmi)
-high_kruskal_test_result
+high_wilcox_test_result <- wilcox.test(Shannon ~ feed, data = high_samp_dat_bmi)
+high_wilcox_test_result
 
 # create one plot with two boxplots (one for each feed type) vs shannon diversity in the all bmi category
 all_bmi_boxplot_feed <- plot_richness(all_BMI_phyloseq_rare, x = "feed", measures = c("Shannon")) +
@@ -49,5 +49,5 @@ alphadiv <- estimate_richness(all_BMI_phyloseq_rare)
 samp_dat <- sample_data(all_BMI_phyloseq_rare)
 samp_dat_bmi <- data.frame(samp_dat, alphadiv)
 
-kruskal_test_result <- kruskal.test(Shannon ~ feed, data = samp_dat_bmi)
-kruskal_test_result
+wilcox_test_result <- wilcox.test(Shannon ~ feed, data = samp_dat_bmi)
+wilcox_test_result
