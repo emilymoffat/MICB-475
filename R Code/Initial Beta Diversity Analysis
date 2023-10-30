@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# MICB 475 project 2 creating phyloseq objects
+# MICB 475 project 2 initial beta diversity analysis 
 # Emily 2023-10-28
 
 library(phyloseq)
