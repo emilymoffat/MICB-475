@@ -1,0 +1,51 @@
+#Load Packages
+library(tidyverse)
+library(phyloseq)
+library(DESeq2)
+
+### Has NA in plot still ###
+
+### LOW BMI ###
+
+#Load Phyloseq Object
+load("low_BMI_rare_phyloseq.RData")
+
+#DESeq for low_BMI_phylloseq 
+infant_plus1 <- transform_sample_counts(low_BMI_rare_genus, function(x) x+1)
+infant_deseq <- phyloseq_to_deseq2(infant_plus1, ~feed)
+infant <- DESeq(infant_deseq)
+
+# reference group = breastfed infants 
+res <- results(infant, tidy=TRUE, contrast = c("feed", "formula","breast"))
+View(res)
+
+#Table of Results
+sigASVs <- res %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+View(sigASVs)
+
+#Get a vector of ASV names
+sigASVs_vec <- sigASVs %>%
+  pull(ASV)
+
+#Prune phyloseq file
+infant_filt <- prune_taxa(sigASVs_vec,low_BMI_rare_phyloseq)
+
+#Add taxonomy onto DESeq results table
+merged_results <- tax_table(infant_filt) %>% as.data.frame() %>%
+  rownames_to_column(var="ASV") %>%
+  right_join(sigASVs) %>%
+  arrange(log2FoldChange) %>%
+  mutate(Genus = make.unique(Genus)) %>%
+  mutate(Genus = factor(Genus, levels=unique(Genus)))
+
+#Make DESeq Plot
+deseq_bar_plot <- ggplot(merged_results) +
+  geom_bar(aes(x=Genus, y=log2FoldChange), stat="identity")+
+  geom_errorbar(aes(x=Genus, ymin=log2FoldChange-lfcSE, ymax=log2FoldChange+lfcSE)) +
+  theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
+deseq_bar_plot
+
+#Save plot as png in working directory
+ggsave(filename="low_bmi_deseq_bar_plot.png", deseq_bar_plot, height=4, width=15)
