@@ -31,4 +31,23 @@ high_samp_dat_bmi <- data.frame(high_samp_dat, high_alphadiv)
 high_kruskal_test_result <- kruskal.test(Shannon ~ feed, data = high_samp_dat_bmi)
 high_kruskal_test_result
 
+# create one plot with two boxplots (one for each feed type) vs shannon diversity in the all bmi category
+all_bmi_boxplot_feed <- plot_richness(all_BMI_phyloseq_rare, x = "feed", measures = c("Shannon")) +
+  xlab("Feeding Mode") +
+  geom_boxplot()
+all_bmi_boxplot_feed
 
+# NOT FINISHED - create one plot with two boxplots (high vs low bmi category) vs shannon diversity in the all bmi category
+# need to create a new column that divides mom_bmi into high vs low
+all_bmi_boxplot_bmi <- plot_richness(all_BMI_phyloseq_rare, x = "mom_bmi", measures = c("Shannon")) +
+  xlab("Mom BMI") +
+  geom_boxplot()
+all_bmi_boxplot_bmi
+
+# run significance test
+alphadiv <- estimate_richness(all_BMI_phyloseq_rare)
+samp_dat <- sample_data(all_BMI_phyloseq_rare)
+samp_dat_bmi <- data.frame(samp_dat, alphadiv)
+
+kruskal_test_result <- kruskal.test(Shannon ~ feed, data = samp_dat_bmi)
+kruskal_test_result
