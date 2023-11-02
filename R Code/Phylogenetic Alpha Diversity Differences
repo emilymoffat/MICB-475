@@ -87,22 +87,33 @@ phylo_dist_low <- pd(t(otu_table(low_BMI_phyloseq_rare)), phy_tree(low_BMI_phylo
 sample_data(low_BMI_phyloseq_rare)$PD <- phylo_dist_low$PD
 
 # Create a box plot of phylogenetic diversity against mom BMIs
-plot.pd.feed.low <- ggplot(sample_data(low_BMI_phyloseq_rare), aes(x = feed, y = PD)) +
+plot.pd.bmi.low <- ggplot(sample_data(low_BMI_phyloseq_rare), aes(x = feed, y = PD)) +
   geom_boxplot() +
   xlab("Feed Type Low BMI") +
   ylab("Phylogenetic Diversity")
 
 # View the plot
-print(plot.pd.feed.low)
+print(plot.pd.bmi.low)
 
 #Set parameters for low BMI
 alphadiv_low <- estimate_richness(low_BMI_phyloseq_rare)
 samp_dat_low <- sample_data(low_BMI_phyloseq_rare)
 samp_dat_bmi_low <- data.frame(samp_dat_low, alphadiv_low)
 
-#Wilcox Test Result Feed Low
-wilcox_test_result_feed_low <- wilcox.test(Observed ~ feed, data=samp_dat_bmi_low)
-print(wilcox_test_result_feed_low)
+#Linear Model Test Result BMI Low
+linear_test_result_low<- summary(glm(Observed ~ feed + baby_delivery, data=samp_dat_bmi_low))$coefficients
+print(linear_test_result_low)
+
+install.packages("ggpubr")
+library(ggpubr)
+
+plot.pd.bmi.low +
+  geom_signif(comparisons = list(c("formula", "breast")), 
+              map_signif_level = TRUE, 
+              textsize = 4, 
+              vjust = 0.4) +
+  theme_pubr()
+
 
 
 ##High BMI Group: 
@@ -128,11 +139,18 @@ alphadiv_high <- estimate_richness(high_BMI_phyloseq_rare)
 samp_dat_high <- sample_data(high_BMI_phyloseq_rare)
 samp_dat_bmi_high <- data.frame(samp_dat_high, alphadiv_high)
 
-#Wilcox Test Result Feed Low
-wilcox_test_result_feed_high <- wilcox.test(Observed ~ feed, data=samp_dat_bmi_high)
-print(wilcox_test_result_feed_high)
+#Linear Model Result Feed Low
+linear_test_result_high <- summary(glm(Observed ~ feed + baby_delivery, data=samp_dat_bmi_high))$coefficients
+print(linear_test_result)
 
-install
+plot.pd.bmi.high+
+  geom_signif(comparisons = list(c("formula", "breast")), 
+              map_signif_level = TRUE, 
+              textsize = 4, 
+              vjust = 0.4) +
+  theme_pubr()
+
+
 system("picrust2_pipeline.py -s feature_table.qza -i rep_seqs.qza -o picrust2_output", intern = TRUE)
 
 
@@ -158,6 +176,7 @@ pd_feed_high <- ggplot(sample_data(high_BMI_phyloseq_rare), aes(x = feed, y = PD
   ylab("Phylogenetic Diversity") + 
   ylim(1,8)
 
+
 # Combine the plots using grid.arrange() function and set y-axis limits
 combined_plot <- grid.arrange(pd_feed_low, pd_feed_high, ncol = 2)
 
@@ -167,9 +186,37 @@ combined_plot <- combined_plot + coord_cartesian(ylim = c(1, 8))
 # Print the combined plot
 print(combined_plot)
 
+# Your existing data and plot definitions
+data_low <- sample_data(low_BMI_phyloseq_rare)
+data_high <- sample_data(high_BMI_phyloseq_rare)
+
+# Combine the data into one data frame
+combined_data <- rbind(data_low, data_high)
+combined_data$BMI_Group <- factor(c(rep("Low BMI", nrow(data_low)), rep("High BMI", nrow(data_high))))
+
+# Create a single box plot with facets for different BMI groups
+combined_plot <- ggplot(combined_data, aes(x = feed, y = PD)) +
+  geom_boxplot() +
+  geom_point(aes(color = BMI_Group), size = 1, position = position_jitter(width = 0.1)) + # Add individual points
+  xlab("Feed Type") +
+  ylab("Phylogenetic Diversity") +
+  ylim(1, 8) +
+  facet_grid(. ~ BMI_Group, scales = "free_y") +
+  geom_text(data = data.frame(x = c(1, 2), y = c(7.5, 7.5), label = ifelse(t_test_result$p.value < 0.05, "*", "")),
+            aes(x = x, y = y, label = label), size = 6, vjust = -1)
+
+combined_plot+
+  geom_signif(comparisons = list(c("formula", "breast")), 
+              map_signif_level = TRUE, 
+              textsize = 4, 
+              vjust = 0.4) +
+  theme_pubr()
+
+# Print the combined plot
+print(combined_plot)
 
 
-####COREMICROBIOME ANALYSIS#####
+####COREMICROBIOME ANALYSIS LOW BMI#####
 library(phyloseq)
 library(microbiome)
 
@@ -189,6 +236,7 @@ feed_list_full <- list(Formula = formula_core, Breast = breast_core)
 feed_venn_low <- ggVennDiagram(x = feed_list_full)
 
 
+####CORE MICROBIOME ANALYSIS HIGH BMI######
 library(phyloseq)
 library(microbiome)
 
@@ -205,4 +253,11 @@ prune_taxa(breast_core,high_BMI_phyloseq_rare) %>%
 
 feed_list_full <- list(Formula = formula_core, Breast = breast_core)
 
-feed_venn_high <- ggVennDiagram(x = feed_list_full)
+# Define your custom color set
+custom_colors <- c("purple", "green", "blue")
+
+# Create the Venn diagram with custom colors
+feed_venn_high <- ggVennDiagram(x = feed_list_full, colorset = custom_colors)
+
+# Print the Venn diagram
+print(feed_venn_high)
