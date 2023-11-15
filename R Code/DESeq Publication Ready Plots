@@ -1,0 +1,151 @@
+#!/usr/bin/env Rscript
+# MICB 475 project DESEq final analysis 
+# Emily 2023-11-15
+
+# Load Packages
+library(tidyverse)
+library(phyloseq)
+library(DESeq2) 
+
+#### LOW BMI #### 
+
+#Load Phyloseq Object
+load("low_BMI_phyloseq_rare.RData")
+
+#DESeq for low_BMI_phylloseq 
+low_infant_plus1 <- transform_sample_counts(low_BMI_phyloseq_rare, function(x) x+1)
+low_infant_deseq <- phyloseq_to_deseq2(low_infant_plus1, ~feed)
+low_infant <- DESeq(low_infant_deseq)
+
+#Reference group = breastfed infants 
+low_res <- results(low_infant, tidy=TRUE, contrast = c("feed","breast","formula"))
+
+#Table of Results
+low_sigASVs <- low_res %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+
+#Get a vector of ASV names
+low_sigASVs_vec <- low_sigASVs %>%
+  pull(ASV)
+
+#Prune phyloseq file
+low_infant_filt <- prune_taxa(low_sigASVs_vec,low_BMI_phyloseq_rare)
+
+#Add taxonomy onto DESeq results table
+low_merged_results <- tax_table(low_infant_filt) %>% as.data.frame() %>%
+  rownames_to_column(var="ASV") %>%
+  right_join(low_sigASVs) %>%
+  arrange(log2FoldChange) %>%
+  mutate(Genus = make.unique(Genus)) %>%
+  mutate(Genus = factor(Genus, levels=unique(Genus)))
+
+#Filter out NA from merged_results
+low_merged_results_filt <- filter(low_merged_results, Genus !="NA", Genus !="NA.1", Genus !="NA.2")
+
+#Make DESeq Plot
+low_deseq_bar_plot <- ggplot(low_merged_results_filt) +
+  geom_bar(aes(x=Genus, y=log2FoldChange), stat="identity")+
+  geom_errorbar(aes(x=Genus, ymin=log2FoldChange-lfcSE, ymax=log2FoldChange+lfcSE)) +
+  theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
+
+low_deseq_bar_plot
+
+#### Make low BMI plot publication ready #### 
+
+# Create a new column for fill color based on the sign of log2FoldChange
+low_merged_results_filt$fill_color <- ifelse(low_merged_results_filt$log2FoldChange < 0, "blue", "red")
+
+# Plot
+low_deseq_bar_plot_pretty <- ggplot(low_merged_results_filt) + 
+  geom_bar(aes(x = Genus, y = log2FoldChange, fill = fill_color), stat = "identity", alpha = 0.8) +  # Set alpha to control transparency
+  geom_errorbar(aes(x = Genus, ymin = log2FoldChange - lfcSE, ymax = log2FoldChange + lfcSE), size = 0.35) +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", size = 0.5) +
+  scale_fill_manual(values = c("blue" = "blue", "red" = "red")) +  # Set the fill colors directly
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white", color = "black", size = 1),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+    plot.title = element_text(hjust = 0.5)  # Center the title
+  ) +
+  guides(fill = FALSE) +  # Remove the legend for fill color
+  labs(
+    y = "Log2 Fold Change",  # Set the Y-axis label
+    title = "DESeq Analysis of Low BMI Moms"
+  )
+print(low_deseq_bar_plot_pretty)
+
+#Save plot as png in working directory
+ggsave(filename="DESeq for low BMI Moms.png", low_deseq_bar_plot_pretty, height=10, width=15)
+
+#### HIGH BMI ####
+
+#Load Phyloseq Object
+load("high_BMI_phyloseq_rare.RData")
+
+#DESeq for high_BMI_phyloseq 
+high_infant_plus1 <- transform_sample_counts(high_BMI_phyloseq_rare, function(x) x+1)
+high_infant_deseq <- phyloseq_to_deseq2(high_infant_plus1, ~feed)
+high_infant <- DESeq(high_infant_deseq)
+
+#Reference group = breastfed infants 
+high_res <- results(high_infant, tidy=TRUE, contrast = c("feed", "breast", "formula"))
+
+#Table of Results
+high_sigASVs <- high_res %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+
+#Get a vector of ASV names
+high_sigASVs_vec <- high_sigASVs %>%
+  pull(ASV)
+
+#Prune phyloseq file
+high_infant_filt <- prune_taxa(high_sigASVs_vec,high_BMI_phyloseq_rare)
+
+#Add taxonomy onto DESeq results table
+high_merged_results <- tax_table(high_infant_filt) %>% as.data.frame() %>%
+  rownames_to_column(var="ASV") %>%
+  right_join(high_sigASVs) %>%
+  arrange(log2FoldChange) %>%
+  mutate(Genus = make.unique(Genus)) %>%
+  mutate(Genus = factor(Genus, levels=unique(Genus)))
+
+#Make DESeq Plot
+high_deseq_bar_plot <- ggplot(high_merged_results) +
+  geom_bar(aes(x=Genus, y=log2FoldChange), stat="identity")+
+  geom_errorbar(aes(x=Genus, ymin=log2FoldChange-lfcSE, ymax=log2FoldChange+lfcSE)) +
+  theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
+high_deseq_bar_plot
+
+#### Make high BMI plot publication ready ####
+
+# Create a new column for fill color based on the sign of log2FoldChange
+high_merged_results$fill_color <- ifelse(high_merged_results$log2FoldChange < 0, "blue", "red")
+
+# Plot
+low_deseq_bar_plot_pretty <- ggplot(high_merged_results) + 
+  geom_bar(aes(x = Genus, y = log2FoldChange, fill = fill_color), stat = "identity", alpha = 0.8) +  # Set alpha to control transparency
+  geom_errorbar(aes(x = Genus, ymin = log2FoldChange - lfcSE, ymax = log2FoldChange + lfcSE), size = 0.35) +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", size = 0.5) +
+  scale_fill_manual(values = c("blue" = "blue", "red" = "red")) +  # Set the fill colors directly
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white", color = "black", size = 1),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+    plot.title = element_text(hjust = 0.5)  # Center the title
+  ) +
+  guides(fill = FALSE) +  # Remove the legend for fill color
+  labs(
+    y = "Log2 Fold Change",  # Set the Y-axis label
+    title = "DESeq Analysis of High BMI Moms"
+  )
+print(low_deseq_bar_plot_pretty)
+
+#Save plot as png in working directory
+ggsave(filename="DESeq for High BMI Moms.png", low_deseq_bar_plot_pretty, height=10, width=15)
+
