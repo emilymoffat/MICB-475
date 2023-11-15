@@ -86,10 +86,10 @@ low_BMI_phyloseq <- subset_samples(all_BMI_phyloseq, mom_bmi<=30)
 class(low_BMI_phyloseq)
 
 #rarefied phyloseq objects 
-high_BMI_phyloseq_rare <- subset_samples(infant_rare, mom_bmi>30)
+high_BMI_phyloseq_rare <- subset_samples(all_BMI_phyloseq_rare, mom_bmi>30)
 class(high_BMI_phyloseq_rare)
 
-low_BMI_phyloseq_rare <- subset_samples(infant_rare, mom_bmi<=30)
+low_BMI_phyloseq_rare <- subset_samples(all_BMI_phyloseq_rare, mom_bmi<=30)
 class(low_BMI_phyloseq_rare)
 
 ##### Saving all phyloseq objects #####
