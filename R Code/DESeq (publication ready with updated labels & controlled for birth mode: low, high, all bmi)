@@ -179,3 +179,93 @@ high_deseq_bar_plot_pretty
 
 #Save plot as png in working directory
 ggsave(filename="high_bmi_deseq_bar_plot_pretty.png", high_deseq_bar_plot, height=4, width=10, bg="white")
+
+
+#### ALL BMI ####
+
+#Load Phyloseq Object
+load("all_BMI_phyloseq_rare_new.RData")
+
+#DESeq for low_BMI_phylloseq 
+all_infant_plus1 <- transform_sample_counts(all_BMI_phyloseq_rare_new, function(x) x+1)
+all_infant_deseq <- phyloseq_to_deseq2(all_infant_plus1, ~feed+baby_delivery)
+all_infant <- DESeq(all_infant_deseq)
+
+#Reference group = breastfed infants 
+all_res <- results(all_infant, tidy=TRUE, contrast = c("feed","breast","formula"))
+
+#Table of Results
+all_sigASVs <- all_res %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+
+#Get a vector of ASV names
+all_sigASVs_vec <- all_sigASVs %>%
+  pull(ASV)
+
+#Prune phyloseq file
+all_infant_filt <- prune_taxa(all_sigASVs_vec,all_BMI_phyloseq_rare_new)
+
+#Add taxonomy onto DESeq results table
+all_merged_results <- tax_table(all_infant_filt) %>% as.data.frame() %>%
+  rownames_to_column(var="ASV") %>%
+  right_join(low_sigASVs) %>%
+  arrange(log2FoldChange) %>%
+  mutate(Genus = make.unique(Genus)) %>%
+  mutate(Genus = factor(Genus, levels=unique(Genus)))
+
+#Filter out NA from merged_results
+all_merged_results_filt <- filter(all_merged_results, Genus !="NA", 
+    Genus !="NA.1", Genus !="NA.2", Genus !="NA.3", Genus !="NA.4",
+    Genus !="NA.5", Genus !="NA.6", Genus !="NA.7", Genus !="NA.8", 
+    Genus !="NA.9", Genus !="NA.10", Genus !="NA.11", Genus !="NA.12",
+    Genus !="NA.13", Genus !="NA.14", Genus !="NA.15", Genus !="NA.16", 
+    Genus !="NA.17", Genus !="NA.18", Genus !="NA.19", Genus !="NA.20",
+    Genus !="NA.21", Genus !="NA.22", Genus !="NA.23", Genus !="NA.24",
+    Genus !="NA.25", Genus !="NA.26", Genus !="NA.27", Genus !="NA.28")
+
+#### Changing genus names ####
+#Create copy of Genus column (requires data.table package)
+all_merged_results_filt$Genus_edited <- copy(all_merged_results_filt$Genus)
+
+#Rename genus names to replace "_" and "." with spaces
+all_merged_results_edit <- all_merged_results_filt %>%
+  mutate(Genus_edited = case_when(
+    Genus_edited == "g__[Ruminococcus]_torques_group" ~ "[Ruminococcus] torques group",
+    # Add more lines if needed
+    TRUE ~ Genus_edited  # Keeps the original name for the rest
+  ))
+
+#Remove "g_" from front of all names
+all_merged_results_edit$Genus_edited <- gsub("g__", "", all_merged_results_edit$Genus_edited)
+
+
+#### Make Publication Ready DESeq Plot ####
+
+#Create colomn for fill color
+all_merged_results_edit$fill_color <- ifelse(all_merged_results_edit$log2FoldChange < 0, "blue", "red")
+
+#Make plot
+all_deseq_bar_plot_pretty <- ggplot(all_merged_results_edit, aes(x=reorder(Genus_edited, log2FoldChange))) +
+  geom_bar(aes(y=log2FoldChange, fill = fill_color), stat="identity", alpha = 0.8) + # Set alpha to control transparency
+  geom_errorbar(aes(x=Genus_edited, ymin=log2FoldChange-lfcSE, ymax=log2FoldChange+lfcSE), size = 0.35) +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", size = 0.5) +
+  scale_fill_manual(values = c("blue" = "blue", "red" = "red")) +  # Set the fill colors directly
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white", color = "black", size = 1),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+    plot.title = element_text(hjust = 0.5)  # Center the title
+  ) +
+  guides(fill = FALSE) +  # Remove the legend for fill color
+  labs(
+    y = "Log2 Fold Change",  # Set the Y-axis label
+    x = "Genus", # Set the X-axis label
+    title = "DESeq Analysis of All BMI Moms"
+  )
+print(all_deseq_bar_plot_pretty)
+
+#Save plot as png in working directory
+ggsave(filename="all_bmi_deseq_bar_plot_controlled_pretty.png", all_deseq_bar_plot_pretty, height=4, width=6, bg="white")
