@@ -12,7 +12,7 @@ load("low_BMI_rare_phyloseq.RData")
 
 #DESeq for low_BMI_phylloseq 
 low_infant_plus1 <- transform_sample_counts(low_BMI_rare_phyloseq, function(x) x+1)
-low_infant_deseq <- phyloseq_to_deseq2(low_infant_plus1, ~feed)
+low_infant_deseq <- phyloseq_to_deseq2(low_infant_plus1, ~feed+baby_delivery)
 low_infant <- DESeq(low_infant_deseq)
 
 #Reference group = breastfed infants 
@@ -48,28 +48,26 @@ low_merged_results_filt$Genus_edited <- copy(low_merged_results_filt$Genus)
 #Rename genus names to replace "_" and "." with spaces
 low_merged_results_edit <- low_merged_results_filt %>%
   mutate(Genus_edited = case_when(
-    Genus_edited == "g_[Ruminococcus]_torques_group" ~ "[Ruminococcus] torques group",
-    Genus_edited == "g_[Ruminococcus]_torques_group.1" ~ "[Ruminococcus] torques group 1",
-    Genus_edited == "g_[Ruminococcus]_torques_group.2" ~ "[Ruminococcus] torques group 2",
-    Genus_edited == "g_[Ruminococcus]_gnavus_group" ~ "[Ruminococcus] gnavus group",
-    Genus_edited == "g_Christensenellaceae_R-7_group" ~ "Christensenellaceae R-7 group",
-    Genus_edited == "g_Family_XIII_AD3011_group" ~ "Family XIII AD3011 group",
-    Genus_edited == "g_[Clostridium]_innocuum_group" ~ "[Clostridium] innocuum group",
-    Genus_edited == "g_Acinetobacter.1" ~ "Acinetobacter 1",
-    Genus_edited == "g_Acinetobacter.2" ~ "Acinetobacter 2",
-    Genus_edited == "g_Bacteroides.1" ~ "Bacteroides 1",
-    Genus_edited == "g_Blautia.1" ~ "Blautia 1",
-    Genus_edited == "g_Stenotrophomonas.1" ~ "Stenotrophomonas 1",
-    Genus_edited == "g_Pseudomonas.1" ~ "Pseudomonas 1",
-    Genus_edited == "g_Butyricimonas.1" ~ "Butyricimonas 1",
-    Genus_edited == "g_Alistipes.1" ~ "Alistipes 1",
-    Genus_edited == "g_Bifidobacterium.1" ~ "Bifidobacterium 1",
+    Genus_edited == "g__[Ruminococcus]_torques_group" ~ "[Ruminococcus] torques group",
+    Genus_edited == "g__[Ruminococcus]_torques_group.1" ~ "[Ruminococcus] torques group 1",
+    Genus_edited == "g__[Ruminococcus]_torques_group.2" ~ "[Ruminococcus] torques group 2",
+    Genus_edited == "g__[Ruminococcus]_gnavus_group" ~ "[Ruminococcus] gnavus group",
+    Genus_edited == "g__Christensenellaceae_R-7_group" ~ "Christensenellaceae R-7 group",
+    Genus_edited == "g__Family_XIII_AD3011_group" ~ "Family XIII AD3011 group",
+    Genus_edited == "g__Acinetobacter.1" ~ "Acinetobacter 1",
+    Genus_edited == "g__Bacteroides.1" ~ "Bacteroides 1",
+    Genus_edited == "g__Blautia.1" ~ "Blautia 1",
+    Genus_edited == "g__Stenotrophomonas.1" ~ "Stenotrophomonas 1",
+    Genus_edited == "g__Pseudomonas.1" ~ "Pseudomonas 1",
+    Genus_edited == "g__Butyricimonas.1" ~ "Butyricimonas 1",
+    Genus_edited == "g__Bifidobacterium.1" ~ "Bifidobacterium 1",
+    Genus_edited == "g__Bifidobacterium.2" ~ "Bifidobacterium 2",
     # Add more lines if needed
     TRUE ~ Genus_edited  # Keeps the original name for the rest
   ))
 
 #Remove "g_" from front of all names
-low_merged_results_filt$Genus_edited <- gsub("g_", "", low_merged_results_filt$Genus_edited)
+low_merged_results_edit$Genus_edited <- gsub("g_", "", low_merged_results_edit$Genus_edited)
 
 #### Make Publication Ready DESeq Plot ####
 
@@ -110,7 +108,7 @@ load("high_BMI_rare_phyloseq.RData")
 
 #DESeq for high_BMI_phyloseq 
 high_infant_plus1 <- transform_sample_counts(high_BMI_rare_phyloseq, function(x) x+1)
-high_infant_deseq <- phyloseq_to_deseq2(high_infant_plus1, ~feed)
+high_infant_deseq <- phyloseq_to_deseq2(high_infant_plus1, ~feed+baby_delivery)
 high_infant <- DESeq(high_infant_deseq)
 
 #Reference group = breastfed infants 
@@ -143,10 +141,7 @@ high_merged_results$Genus_edited <- copy(high_merged_results$Genus)
 #Rename genus names to replace "_" and "." with spaces
 high_merged_results_edit <- high_merged_results %>%
   mutate(Genus_edited = case_when(
-    Genus_edited == "g__Sellimonas.1" ~ "Sellimonas 1",
-    Genus_edited == "g__Blautia.1" ~ "Blautia 1",
     Genus_edited == "g__[Clostridium]_innocuum_group" ~ "[Clostridium] innocuum group",
-    Genus_edited == "g__[Ruminococcus]_torques_group" ~ "[Ruminococcus] torques group",
     Genus_edited == "g__Clostridium_sensu_stricto_1" ~ "Clostridium sensu stricto 1",
     # Add more lines if needed
     TRUE ~ Genus_edited  # Keeps the original name if it doesn't match any condition
