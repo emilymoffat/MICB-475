@@ -1,61 +1,167 @@
+install.packages("gridExtra")
+install.packages("ggsignif")
+install.packages("ggpubr")
+
 library(phyloseq)
 library(tidyverse)
-library(ggplot2)
 library(vegan) 
+library(ggplot2)
+library(gridExtra)
+library(ggsignif)
+library(ggpubr)
 
-# create one plot with two boxplots (one for each feed type) vs shannon diversity in the low mom_bmi category
+load("all_BMI_phyloseq_rare.RData")
+load("high_BMI_phyloseq_rare.RData")
+load("low_BMI_phyloseq_rare.RData")
+load("all_BMI_phyloseq_rare_new.RData")
+
+#### Alpha Div plots ####
+
+## create one plot with two boxplots (one for each feed type) vs shannon diversity in the low mom_bmi category
 low_bmi_boxplot <- plot_richness(low_BMI_phyloseq_rare, x = "feed", measures = c("Shannon")) +
   xlab("Feeding Mode") +
   geom_boxplot()
 low_bmi_boxplot
 
-# run significance test
-low_alphadiv <- estimate_richness(low_BMI_phyloseq_rare)
-low_samp_dat <- sample_data(low_BMI_phyloseq_rare)
-low_samp_dat_bmi <- data.frame(low_samp_dat, low_alphadiv)
+# make graph more visually appealing
+low_bmi_boxplot_new <- low_bmi_boxplot$data %>% 
+  ggplot(aes(x = feed, y =value)) +
+  geom_boxplot(outlier.shape =NA) +
+  geom_point(aes(color = feed), shape = 1, size = 1, position = position_jitter(width = 0.1)) +
+  # Add individual points with color mapping
+  xlab("Feed Type Low BMI") +
+  ylab("Shannon Diversity Score") +
+  ylim(1, 2.8) +
+  scale_color_manual(values = c("breast" = "red", "formula" = "blue")) +
+  geom_signif(comparisons = list(c("formula", "breast")), 
+              annotations = ("*"), 
+              textsize = 6, 
+              vjust = 0.1) +
+  theme_pubr()
+low_bmi_boxplot_new
 
-low_wilcox_test_result <- wilcox.test(Shannon ~ feed, data = low_samp_dat_bmi)
-low_wilcox_test_result
+# save plot
+ggsave(filename = "Low BMI Feed.png"
+       , low_bmi_boxplot_new
+       , height=4, width=6)
 
 # create one plot with two boxplots (one for each feed type) vs shannon diversity in the high mom_bmi category
 high_bmi_boxplot <- plot_richness(high_BMI_phyloseq_rare, x = "feed", measures = c("Shannon")) +
-  xlab("Feeding Mode") +
+  xlab("Feeding Mode") + ylab("Shannon Diversity") +
   geom_boxplot()
 high_bmi_boxplot
 
-# run significance test
+# make graph more visually appealing 
+high_bmi_boxplot_new <- high_bmi_boxplot$data %>% 
+  ggplot(aes(x = feed, y =value)) +
+  geom_boxplot(outlier.shape =NA) +
+  geom_point(aes(color = feed), shape = 1, size = 1, position = position_jitter(width = 0.1)) +
+  # Add individual points with color mapping
+  xlab("Feed Type High BMI") +
+  ylab("Shannon Diversity Score") +
+  ylim(1, 2.8) +
+  scale_color_manual(values = c("breast" = "red", "formula" = "blue")) +
+  geom_signif(comparisons = list(c("formula", "breast")), 
+              annotations = ("NS"), 
+              textsize = 5, 
+              vjust = 0.1) +
+  theme_pubr()
+high_bmi_boxplot_new
+
+# save plot
+ggsave(filename = "High BMI Feed.png"
+       , high_bmi_boxplot_new
+       , height=4, width=6)
+
+# combine the above plots into one plot showing all 4 boxplots
+combined_alpha_plot <- grid.arrange(low_bmi_boxplot_new, high_bmi_boxplot_new, ncol =2)
+
+# save plot
+ggsave(filename = "Low vs High BMI & Feed.png"
+       , combined_alpha_plot
+       , height=4, width=6)
+
+# create one plot with two boxplots (low vs high BMI) vs shannon diversity in the all bmi category
+all_bmi_boxplot_bmi <- plot_richness(all_BMI_phyloseq_rare_new, x = "mom_bmi_label", measures = c("Shannon")) +
+  xlab("Mom BMI") + ylab("Shannon Diversity") +
+  geom_boxplot()
+all_bmi_boxplot_bmi
+
+# make graph more visually appealing
+all_bmi_boxplot_bmi_new <- all_bmi_boxplot_bmi$data %>% 
+  ggplot(aes(x = mom_bmi_label, y =value)) +
+  geom_boxplot(outlier.shape =NA) +
+  geom_point(aes(color = mom_bmi_label), shape = 1, size = 1, position = position_jitter(width = 0.1)) +
+  # Add individual points with color mapping
+  xlab("BMI Category") +
+  ylab("Shannon Diversity Score") +
+  ylim(1, 2.8) +
+  scale_color_manual(values = c("high" = "red", "low" = "blue"), name = "BMI Category") +
+  geom_signif(comparisons = list(c("high", "low")), 
+              annotations = ("NS"), 
+              textsize = 5, 
+              vjust = 0.1) +
+  theme_pubr()
+all_bmi_boxplot_bmi_new
+
+# save plot
+ggsave(filename = "Low vs High BMI.png"
+       , all_bmi_boxplot_bmi_new
+       , height=4, width=6)
+
+# create one plot with two boxplots (one for each feed type) vs shannon diversity in the all bmi category
+all_bmi_boxplot_feed <- plot_richness(all_BMI_phyloseq_rare, x = "feed", measures = c("Shannon")) +
+  xlab("Feeding Mode") + ylab("Shannon Diversity") +
+  geom_boxplot()
+all_bmi_boxplot_feed
+
+# make graphs more visually appealing
+all_bmi_boxplot_feed_new <- all_bmi_boxplot_feed$data %>% 
+  ggplot(aes(x = feed, y =value)) +
+  geom_boxplot(outlier.shape =NA) +
+  geom_point(aes(color = feed), shape = 1, size = 1, position = position_jitter(width = 0.1)) +
+  # Add individual points with color mapping
+  xlab("Feeding Mode") +
+  ylab("Shannon Diversity Score") +
+  ylim(1, 2.8) +
+  scale_color_manual(values = c("breast" = "red", "formula" = "blue"), name = "Feeding Mode") +
+  geom_signif(comparisons = list(c("breast", "formula")), 
+              annotations = ("NS"), 
+              textsize = 5, 
+              vjust = 0.1) +
+  theme_pubr()
+all_bmi_boxplot_feed_new
+
+# save plot
+ggsave(filename = "Breast vs Formula.png"
+       , all_bmi_boxplot_feed_new
+       , height=4, width=6)
+
+# Linear Regression Significance Tests
 high_alphadiv <- estimate_richness(high_BMI_phyloseq_rare)
 high_samp_dat <- sample_data(high_BMI_phyloseq_rare)
 high_samp_dat_bmi <- data.frame(high_samp_dat, high_alphadiv)
 
-high_wilcox_test_result <- wilcox.test(Shannon ~ feed, data = high_samp_dat_bmi)
-high_wilcox_test_result
+linear_test_result_high<- summary(glm(Shannon ~ feed + baby_delivery, data=high_samp_dat_bmi))$coefficients
+print(linear_test_result_high)
 
-# create one plot with two boxplots (one for each feed type) vs shannon diversity in the all bmi category
-all_bmi_boxplot_feed <- plot_richness(all_BMI_phyloseq_rare, x = "feed", measures = c("Shannon")) +
-  xlab("Feeding Mode") +
-  geom_boxplot()
-all_bmi_boxplot_feed
+low_alphadiv <- estimate_richness(low_BMI_phyloseq_rare)
+low_samp_dat <- sample_data(low_BMI_phyloseq_rare)
+low_samp_dat_bmi <- data.frame(low_samp_dat, low_alphadiv)
 
-# run significance test
+linear_test_result_low<- summary(glm(Shannon ~ feed + baby_delivery, data=low_samp_dat_bmi))$coefficients
+print(linear_test_result_low)
+
 alphadiv <- estimate_richness(all_BMI_phyloseq_rare)
 samp_dat <- sample_data(all_BMI_phyloseq_rare)
 samp_dat_bmi <- data.frame(samp_dat, alphadiv)
 
-wilcox_test_result <- wilcox.test(Shannon ~ feed, data = samp_dat_bmi)
-wilcox_test_result
+linear_test_result_all<- summary(glm(Shannon ~ feed + baby_delivery, data=samp_dat_bmi))$coefficients
+print(linear_test_result_all)
 
-# create one plot with two boxplots (high vs low bmi category) vs shannon diversity in the all bmi category
-# used a separate phyloseq object that had a new column with low vs high mom bmi classification
-all_bmi_boxplot_bmi <- plot_richness(all_BMI_phyloseq_rare_new, x = "mom_bmi_label", measures = c("Shannon")) +
-  xlab("Mom BMI") +
-  geom_boxplot()
-all_bmi_boxplot_bmi
-
-# run significance test
 alphadiv_new <- estimate_richness(all_BMI_phyloseq_rare_new)
 samp_dat_new <- sample_data(all_BMI_phyloseq_rare_new)
 samp_dat_bmi_new <- data.frame(samp_dat_new, alphadiv_new)
 
-wilcox_test_result <- wilcox.test(Shannon ~ mom_bmi_label, data = samp_dat_bmi_new)
-wilcox_test_result
+linear_test_result_all_new<- summary(glm(Shannon ~ mom_bmi_label + baby_delivery, data=samp_dat_bmi_new))$coefficients
+print(linear_test_result_all_new)
