@@ -15,7 +15,7 @@ load("low_BMI_rare_phyloseq.RData")
 high_infant_plus1 <- transform_sample_counts(high_BMI_rare_phyloseq, function(x) x+1)
 high_infant_deseq <- phyloseq_to_deseq2(high_infant_plus1, ~feed+baby_delivery)
 high_infant <- DESeq(high_infant_deseq)
-high_res <- results(high_infant, tidy=TRUE, contrast = c("feed", "breast", "formula"))
+high_res <- results(high_infant, tidy=TRUE, contrast = c("feed",  "breast", "formula"))
 high_sigASVs <- high_res %>% 
   filter(padj<0.01 & abs(log2FoldChange)>5) %>%
   dplyr::rename(ASV=row)
