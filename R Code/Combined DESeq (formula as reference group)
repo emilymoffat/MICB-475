@@ -15,7 +15,7 @@ load("low_BMI_rare_phyloseq.RData")
 high_infant_plus1 <- transform_sample_counts(high_BMI_rare_phyloseq, function(x) x+1)
 high_infant_deseq <- phyloseq_to_deseq2(high_infant_plus1, ~feed+baby_delivery)
 high_infant <- DESeq(high_infant_deseq)
-high_res <- results(high_infant, tidy=TRUE, contrast = c("feed",  "breast", "formula"))
+high_res <- results(high_infant, tidy=TRUE, contrast = c("feed", "formula", "breast"))
 high_sigASVs <- high_res %>% 
   filter(padj<0.01 & abs(log2FoldChange)>5) %>%
   dplyr::rename(ASV=row)
@@ -24,13 +24,14 @@ high_sigASVs <- high_res %>%
 low_infant_plus1 <- transform_sample_counts(low_BMI_rare_phyloseq, function(x) x+1)
 low_infant_deseq <- phyloseq_to_deseq2(low_infant_plus1, ~feed+baby_delivery)
 low_infant <- DESeq(low_infant_deseq)
-low_res <- results(low_infant, tidy=TRUE, contrast = c("feed","breast","formula"))
+low_res <- results(low_infant, tidy=TRUE, contrast = c("feed","formula", "breast"))
 low_sigASVs <- low_res %>% 
   filter(padj<0.01 & abs(log2FoldChange)>5) %>%
   dplyr::rename(ASV=row)
 
+# Create a vector of ALL significant taxa from both datasets
 allsig <- union(unique(high_sigASVs$ASV), unique(low_sigASVs$ASV))
-#Creates vector with 21 ASVs!
+#Creates vector with 21 ASVs!! :)
 
 #### PLOT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -45,11 +46,12 @@ low_merged_results <- tax_table(low_infant_filt) %>% as.data.frame() %>%
   mutate(Genus = factor(Genus, levels=unique(Genus))) %>%
   mutate(Sig = ASV %in% low_sigASVs)
 
-low_merged_results_edit$Sig <- ifelse(low_merged_results$padj <0.01, "T", "F")
+low_merged_results$Sig <- ifelse(low_merged_results$padj <0.01, "T", "F")
 
 #Add new column called "BMI Category" and make value "Low" for all
-low_merged_results_edit <- low_merged_results_edit %>%
+low_merged_results_edit <- low_merged_results %>%
   mutate(BMI_Category = c("Low"))
+
 
 
 #High BMI
@@ -62,17 +64,20 @@ high_merged_results <- tax_table(high_infant_filt) %>% as.data.frame() %>%
   mutate(Genus = factor(Genus, levels=unique(Genus))) %>%
   mutate(Sig = ASV %in% high_sigASVs)
 
-high_merged_results_edit$Sig <- ifelse(high_merged_results$padj <0.01, "T", "F")
+high_merged_results$Sig <- ifelse(high_merged_results$padj <0.01, "T", "F")
 
 
 #Add new column called "BMI Category" and make value "High" for all
-high_merged_results_edit <- high_merged_results_edit %>%
+high_merged_results_edit <- high_merged_results %>%
   mutate(BMI_Category = c("High"))
 
 
 
 #### Combine for easy plotting ####
 plotdata_combined <- full_join(high_merged_results_edit,low_merged_results_edit)
+
+
+
 
 #Filter out NA from merged_results
 plotdata_combined_filt <- filter(plotdata_combined, Genus !="NA")
@@ -101,6 +106,7 @@ plotdata_combined_edit <- plotdata_combined_filt %>%
     Genus_edited == "g__Bifidobacterium.2" ~ "Bifidobacterium 2",
     Genus_edited == "g__[Clostridium]_innocuum_group" ~ "[Clostridium] innocuum group",
     Genus_edited == "g__Clostridium_sensu_stricto_1" ~ "Clostridium sensu stricto 1",
+    Genus_edited == "g__Acinetobacter.2" ~ "Acinetobacter 2",
     # Add more lines if needed
     TRUE ~ Genus_edited  # Keeps the original name for the rest
   ))
@@ -110,15 +116,15 @@ plotdata_combined_edit$Genus_edited <- gsub("g__", "", plotdata_combined_edit$Ge
 
 
 
-#### Plot ####
-#Remove NAs from Sig
-plotdata_combined_edit2 <- filter(plotdata_combined_edit, !is.na(Sig))
 
+
+#Remove NAs from Sig
+plotdata_combined_edit <- filter(plotdata_combined_edit, !is.na(Sig))
 
 # Pretty Plot
-plotdata_combined_edit2$fill_color <- ifelse(plotdata_combined_edit2$log2FoldChange < 0, "blue", "red")
+plotdata_combined_edit$fill_color <- ifelse(plotdata_combined_edit$log2FoldChange < 0, "blue", "red")
 
-combined_plot_pretty <- ggplot(plotdata_combined_edit2, aes(y=reorder(Genus_edited, log2FoldChange))) +
+combined_plot_pretty2 <- ggplot(plotdata_combined_edit, aes(y=reorder(Genus_edited, log2FoldChange))) +
   geom_bar(aes(x=log2FoldChange, fill = fill_color, alpha = Sig), stat = "identity") +
   geom_errorbar(aes(xmin = log2FoldChange - lfcSE, xmax = log2FoldChange + lfcSE), width = 0.35) +
   geom_vline(xintercept = 0, linetype = "solid", color = "black", size = 0.5) +
@@ -134,18 +140,18 @@ combined_plot_pretty <- ggplot(plotdata_combined_edit2, aes(y=reorder(Genus_edit
     panel.background = element_rect(fill = "white", color = "black", size = 1),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    axis.text.x = element_text(angle = 0, hjust = 1, vjust = 0.5),
+    axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
     plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),  # Center the title
   ) +
   guides(fill = FALSE) +  # Remove the legend for fill color
   labs(
     y = "Genus",  # Set the Y-axis label
-    x = "Log2 Fold Change", # Set X-axis label
-    title = "DESeq Analysis Low and High BMI Moms")
+    x = "Log2 Fold Change (Formula / Breast Fed)", # Set X-axis label 
+  )
 
-print(combined_plot_pretty)
+print(combined_plot_pretty2)
 
 #Save plot as png in working directory
-ggsave(filename="combined_deseq_plot_Sig_no_NA.png", combined_plot_pretty, height=8, width=10, bg="white")
+ggsave(filename="combined_deseq_plot_Sig_no_NA_reference.png", combined_plot_pretty2, height=8, width=10, bg="white")
 
 
