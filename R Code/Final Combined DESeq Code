@@ -1,0 +1,137 @@
+library(DESeq2)
+library(phyloseq)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+
+#Load Phyloseq Objects
+load("high_BMI_phyloseq_rare.RData")
+load("low_BMI_phyloseq_rare.RData")
+
+
+#### RUN DESEQ2 ####
+
+#DESeq for high_BMI_phyloseq 
+high_infant_deseq <- phyloseq_to_deseq2(high_BMI_phyloseq_rare, ~feed+baby_delivery)
+high_infant <- DESeq(high_infant_deseq)
+high_res <- results(high_infant, tidy=TRUE, contrast = c("feed", "breast", "formula"))
+high_sigASVs <- high_res %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+
+#DESeq for low_BMI_phylloseq 
+low_infant_deseq <- phyloseq_to_deseq2(low_BMI_phyloseq_rare, ~feed+baby_delivery)
+low_infant <- DESeq(low_infant_deseq)
+low_res <- results(low_infant, tidy=TRUE, contrast = c("feed","breast", "formula"))
+low_sigASVs <- low_res %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+
+#Create a vector of ALL significant taxa from both datasets
+allsig <- union(unique(high_sigASVs$ASV), unique(low_sigASVs$ASV))
+
+
+#### Tables for plot ####
+
+#Merged results for low BMI
+setnames(low_res, "row", "ASV")
+low_merged_results <- tax_table(low_BMI_phyloseq_rare) %>% as.data.frame() %>%
+  rownames_to_column(var="ASV") %>%
+  right_join(low_res) %>%
+  filter(ASV %in% allsig) %>% 
+  arrange(log2FoldChange) %>%
+  mutate(Genus = make.unique(Genus)) %>%
+  mutate(Genus = factor(Genus, levels=unique(Genus))) %>%
+  mutate(Sig = ASV %in% low_sigASVs)
+
+#Create new column for significance
+low_merged_results$Sig <- ifelse(low_merged_results$padj <0.01, "T", "F")
+#Add new column called "BMI Category" and make value "Low" for all
+low_merged_results_edit <- low_merged_results %>%
+  mutate(BMI_Category = c("Low"))
+
+#Merged results for high BMI
+setnames(high_res, "row", "ASV")
+high_merged_results <- tax_table(high_BMI_phyloseq_rare) %>% as.data.frame() %>%
+  rownames_to_column(var="ASV") %>%
+  right_join(high_res) %>%
+  filter(ASV %in% allsig) %>% 
+  arrange(log2FoldChange) %>%
+  mutate(Genus = make.unique(Genus)) %>%
+  mutate(Genus = factor(Genus, levels=unique(Genus))) %>%
+  mutate(Sig = ASV %in% high_sigASVs)
+
+#Create new column for significance
+high_merged_results$Sig <- ifelse(high_merged_results$padj <0.01, "T", "F")
+#Add new column called "BMI Category" and make value "High" for all
+high_merged_results_edit <- high_merged_results %>%
+  mutate(BMI_Category = c("High"))
+
+#### Combine for plotting ####
+plotdata_combined <- full_join(high_merged_results_edit,low_merged_results_edit)
+
+
+#### Filter out NAs and changing genus names ####
+#Filter out NA from merged_results
+plotdata_combined_filt <- filter(plotdata_combined, Genus !="NA")
+#Remove NAs from Sig
+plotdata_combined_filt <- filter(plotdata_combined_filt, !is.na(Sig))
+
+
+#### Changing genus names ####
+#Create copy of Genus column (requires data.table package)
+plotdata_combined_filt$Genus_edited <- copy(plotdata_combined_filt$Genus)
+#Rename genus names to replace "_" and "." with spaces
+plotdata_combined_edit <- plotdata_combined_filt %>%
+  mutate(Genus_edited = case_when(
+    Genus_edited == "g__[Clostridium]_innocuum_group" ~ "[Clostridium] innocuum group",
+    Genus_edited == "g__Clostridium_sensu_stricto_1" ~ "Clostridium sensu stricto 1",
+    Genus_edited == "g__Clostridium_sensu_stricto_1.1" ~ "Clostridium sensu stricto 1 (1)",
+    Genus_edited == "g__Bacteroides.1" ~ "Bacteroides 1",
+    Genus_edited == "g__Clostridium_sensu_stricto_1.2" ~ "Clostridium sensu stricto 1 (2)",
+    Genus_edited == "g__Porphyromonas.1" ~ "Porphyromonas 1",
+    Genus_edited == "g__Dialister.1" ~ "Dialister 1",
+    Genus_edited == "g__Bifidobacterium.1" ~ "Bifidobacterium 1",
+    Genus_edited == "g__Bifidobacterium.2" ~ "Bifidobacterium 2",
+    Genus_edited == "g__Bifidobacterium.3" ~ "Bifidobacterium 3",
+    Genus_edited == "g__Lactobacillus.1" ~ "Lactobacillus 1",
+    # Add more lines if needed
+    TRUE ~ Genus_edited  # Keeps the original name for the rest
+  ))
+#Remove "g_" from front of all names
+plotdata_combined_edit$Genus_edited <- gsub("g__", "", plotdata_combined_edit$Genus_edited)
+
+
+#### Plotting ####
+#Create column for color based on log2fold change
+plotdata_combined_edit$fill_color <- ifelse(plotdata_combined_edit$log2FoldChange < 0, "blue", "red")
+#Plot
+combined_plot_pretty <- ggplot(plotdata_combined_edit, aes(y=reorder(Genus_edited, log2FoldChange))) +
+  geom_bar(aes(x=log2FoldChange, fill = fill_color, alpha = Sig), stat = "identity") +
+  geom_errorbar(aes(xmin = log2FoldChange - lfcSE, xmax = log2FoldChange + lfcSE), width = 0.35) +
+  geom_vline(xintercept = 0, linetype = "solid", color = "black", size = 0.5) +
+  scale_alpha_manual(values = c(0.4,1)) + # I forget which one comes first, but the Sig=T ones should be darker
+  facet_wrap(~BMI_Category) +
+  scale_fill_manual(values = c("blue" = "blue", "red" = "red")) +  # Set the fill colors directly
+  theme_minimal() +
+  theme(
+    text = element_text(size = 20),  # Set the base font size
+    axis.title = element_text(size = 20, face = "bold"),  # Set x and y-axis title font size
+    axis.text = element_text(size = 14),  # Set x and y-axis tick label font size
+    strip.text = element_text(size = 20, face = "bold"),  # Set the font size and style for faceted titles
+    panel.background = element_rect(fill = "white", color = "black", size = 1),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),  # Center the title
+  ) +
+  guides(fill = FALSE) +  # Remove the legend for fill color
+  labs(
+    y = "Genus",  # Set the Y-axis label
+    x = "Log2 Fold Change (Breast / Formula Fed)", # Set X-axis label 
+  )
+
+print(combined_plot_pretty)
+
+#Save plot as png in working directory
+ggsave(filename="combined_deseq_plot_no+1_bigfont.png", combined_plot_pretty, height=15, width=15, bg="white")
