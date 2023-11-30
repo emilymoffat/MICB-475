@@ -1,0 +1,61 @@
+####LOW BMI KEGG PATHWAY ####
+library(readr)
+library(ggpicrust2)
+library(tidyverse)
+metadata_nicole_low <- read_delim("low_filtered_metadata.txt",
+                                  delim = "\t",
+                                  escape_double = FALSE,
+                                  trim_ws = TRUE
+)
+kegg_abundance <- ko2kegg_abundance("pred_metagenome_unstrat_low.tsv")
+colnames(kegg_abundance) <- sub("^X", "", colnames(kegg_abundance))
+daa_results_df <- pathway_daa(abundance = kegg_abundance, metadata = metadata_nicole_low, group = "feed", daa_method = "DESeq2", select = NULL, reference = NULL) 
+daa_sub_method_results_df <- daa_results_df[daa_results_df$method == "DESeq2", ]
+daa_annotated_sub_method_results_df <- pathway_annotation(pathway = "KO", daa_results_df = daa_sub_method_results_df %>% filter(!is.na(p_adjust)), ko_to_kegg = TRUE)
+library(patchwork)
+library(ggprism)
+
+# Load new pathway
+source('ggpicrust2_errorbar_function_fixed.R')
+
+p <- pathway_errorbar_onesigresult(abundance = kegg_abundance, 
+                                   daa_results_df = daa_annotated_sub_method_results_df, 
+                                   Group = metadata_nicole_low$feed,
+                                   wrap_label = T, wraplength = 20,
+                                   p_values_threshold = 0.05, 
+                                   order = "pathway_class", 
+                                   select = NULL, ko_to_kegg = TRUE, 
+                                   p_value_bar = TRUE, colors = NULL, 
+                                   x_lab = "pathway_name") 
+
+
+####HIGH BMI KEGG PATHWAY ####
+library(readr)
+library(ggpicrust2)
+library(tidyverse)
+metadata_nicole_high<- read_delim("filtered_infant_metadata_high.txt",
+                                  delim = "\t",
+                                  escape_double = FALSE,
+                                  trim_ws = TRUE
+)
+kegg_abundance <- ko2kegg_abundance("pred_metagenome_high.tsv")
+colnames(kegg_abundance) <- sub("^X", "", colnames(kegg_abundance))
+daa_results_df <- pathway_daa(abundance = kegg_abundance, metadata = metadata_nicole_high, group = "feed", daa_method = "DESeq2", select = NULL, reference = NULL) 
+daa_sub_method_results_df <- daa_results_df[daa_results_df$method == "DESeq2", ]
+daa_annotated_sub_method_results_df <- pathway_annotation(pathway = "KO", daa_results_df = daa_sub_method_results_df %>% filter(!is.na(p_adjust)), ko_to_kegg = TRUE)
+library(patchwork)
+library(ggprism)
+
+# Load new pathway
+source('ggpicrust2_errorbar_function_fixed.R')
+
+p <- pathway_errorbar_onesigresult(abundance = kegg_abundance, 
+                                   daa_results_df = daa_annotated_sub_method_results_df, 
+                                   Group = metadata_nicole_high$feed,
+                                   wrap_label = T, wraplength = 20,
+                                   p_values_threshold = 0.05, 
+                                   order = "pathway_class", 
+                                   select = NULL, ko_to_kegg = TRUE, 
+                                   p_value_bar = TRUE, colors = NULL, 
+                                   x_lab = "pathway_name") 
+
