@@ -1,0 +1,66 @@
+Core Microbiome Analysis:
+####COREMICROBIOME ANALYSIS LOW BMI#####
+load(low_BMI_phyloseq_rare.Rdata)
+load(high_BMI_phyloseq_rare.Rdata)
+library(phyloseq)
+library(microbiome)
+
+phyloseq_object <- transform_sample_counts(low_BMI_phyloseq_rare, fun=function(x) x/sum(x))
+formula_phyloseq <- subset_samples(low_BMI_phyloseq_rare, feed=="formula")
+breast_phyloseq <- subset_samples(low_BMI_phyloseq_rare, feed=="breast")
+
+formula_core <- core_members(formula_phyloseq, detection=0, prevalence=0.1)
+breast_core <- core_members(breast_phyloseq, detection=0, prevalence=0.1)
+
+prune_taxa(breast_core,low_BMI_phyloseq_rare) %>% 
+  plot_bar(fill="Genus") + 
+  facet_wrap(.~`feed`, scales ="free")
+
+feed_list_full_low <- list(Formula = formula_core, Breast = breast_core)
+
+feed_venn_low <- ggVennDiagram(x = feed_list_full_low)
+feed_venn_low <- feed_venn_low + ggtitle("Core Microbiome of Low BMI Groups") + theme(plot.title = element_text(hjust = 0.5))
+
+####CORE MICROBIOME ANALYSIS HIGH BMI######
+library(phyloseq)
+library(microbiome)
+library(ggVennDiagram)
+
+phyloseq_object <- transform_sample_counts(high_BMI_phyloseq_rare, fun=function(x) x/sum(x))
+formula_phyloseq <- subset_samples(high_BMI_phyloseq_rare, feed=="formula")
+breast_phyloseq <- subset_samples(high_BMI_phyloseq_rare, feed=="breast")
+
+formula_core <- core_members(formula_phyloseq, detection=0, prevalence=0.1)
+breast_core <- core_members(breast_phyloseq, detection=0, prevalence=0.1)
+
+prune_taxa(breast_core,high_BMI_phyloseq_rare) %>% 
+  plot_bar(fill="Genus") + 
+  facet_wrap(.~`feed`, scales ="free")
+
+feed_list_full_high <- list(Formula = formula_core, Breast = breast_core)
+
+# Define your custom color set
+custom_colors <- c("purple", "green", "blue")
+
+# Create the Venn diagram with custom colors
+feed_venn_high <- ggVennDiagram(x = feed_list_full_high, colorset = custom_colors)
+??ggVennDiagram
+
+feed_venn_high <- feed_venn_high + ggtitle("Core Microbiome of High BMI Groups") + theme(plot.title = element_text(hjust = 0.5))
+##COMBINED VENN DIAGRAM ###
+library(ggplot2)
+library(grid)
+library(gridExtra)
+
+# Combine the individual Venn diagrams into a single plot
+combined_venn <- grid.arrange(feed_venn_high, feed_venn_low, ncol = 2)
+
+# Main title for the combined plot
+main_title <- "Core Microbiome of High and Low BMI Groups"
+
+# Create a text grob for the main title
+main_title_grob <- textGrob(main_title, gp = gpar(fontsize = 16, fontface = "bold"))
+
+# Arrange the individual titles, combined plot, and the main title using grid.arrange
+final_grid_combined <- grid.arrange(main_title_grob, combined_venn, ncol = 1, heights = c(0.1, 0.9))
+
