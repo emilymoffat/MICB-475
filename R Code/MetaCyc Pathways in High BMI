@@ -1,0 +1,20 @@
+###HIGH BMI METACYC PATHWAYS ####
+library(ggpicrust2)
+install.packages("ggh4x")
+library(ggh4x)
+library(tibble)
+library(dplyr)
+
+# Read metadata with #SampleID and add a new column
+abundance_file_high <- "path_abun_unstrat_high.tsv"
+metadata_nicole_high <- read_delim("filtered_infant_metadata_high.txt",
+                                   delim = "\t",
+                                   escape_double = FALSE,
+                                   trim_ws = TRUE
+)
+abundance_data_high <- read_delim(abundance_file_high, delim = "\t", col_names = TRUE, trim_ws = TRUE)
+source('ggpicrust2_errorbar_function_fixed.R')
+
+metacyc_daa_results_df <- pathway_daa(abundance = abundance_data_first_high %>% column_to_rownames("pathway"), metadata = metadata_nicole_high, group = "feed", daa_method = "LinDA")
+metacyc_daa_annotated_results_df_high <- pathway_annotation(pathway = "MetaCyc", daa_results_df = metacyc_daa_results_df_high, ko_to_kegg = FALSE) %>% filter(!is.na(p_adjust))
+pathway_errorbar(abundance = abundance_data_high %>% column_to_rownames("pathway"), daa_results_df = metacyc_daa_annotated_results_df_high, Group = metadata_nicole_high$feed, ko_to_kegg = FALSE, p_values_threshold = 0.05, order = "group", select = NULL, p_value_bar = TRUE, colors = NULL, x_lab = "description") + ggtitle("Low BMI Predicted Functionality") + theme(plot.title = element_text(hjust = 2.5))
