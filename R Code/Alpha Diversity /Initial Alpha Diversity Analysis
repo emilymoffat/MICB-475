@@ -126,7 +126,7 @@ all_bmi_boxplot_feed_new <- all_bmi_boxplot_feed$data %>%
   ylim(1, 2.8) +
   scale_color_manual(values = c("breast" = "red", "formula" = "blue"), name = "Feeding Mode") +
   geom_signif(comparisons = list(c("breast", "formula")), 
-              annotations = ("NS"), 
+              annotations = ("*"), 
               textsize = 5, 
               vjust = 0.1) +
   theme_pubr()
