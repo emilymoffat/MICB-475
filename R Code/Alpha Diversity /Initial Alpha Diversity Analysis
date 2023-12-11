@@ -37,7 +37,7 @@ low_bmi_boxplot_new <- low_bmi_boxplot$data %>%
               annotations = ("*"), 
               textsize = 6, 
               vjust = 0.1) +
-  theme_pubr()
+  theme_pubr(base_size = 14)
 low_bmi_boxplot_new
 
 # save plot
@@ -65,7 +65,7 @@ high_bmi_boxplot_new <- high_bmi_boxplot$data %>%
               annotations = ("NS"), 
               textsize = 5, 
               vjust = 0.1) +
-  theme_pubr()
+  theme_pubr(base_size = 14)
 high_bmi_boxplot_new
 
 # save plot
